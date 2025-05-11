@@ -1,6 +1,11 @@
 use std::collections::BTreeMap;
 
-pub mod iter;
+use crate::around_iterator::AroundIterator;
+
+pub mod around_iterator;
+pub mod direction_iterator;
+
+// reads: https://www.redblobgames.com/grids/hexagons/
 
 //    ___           ___           ___           ___
 //  /     \       /     \       /     \       /     \
@@ -113,7 +118,7 @@ pub mod iter;
 /// ```
 #[derive(Debug, Default, PartialEq)]
 pub struct HexGrid<T> {
-    data: BTreeMap<(u32, u32), T>,
+    data: BTreeMap<(i32, i32), T>,
 }
 
 impl<T> HexGrid<T> {
@@ -123,50 +128,50 @@ impl<T> HexGrid<T> {
         }
     }
 
-    pub fn get(&self, x: u32, y: u32) -> Option<&T> {
+    pub fn get(&self, x: i32, y: i32) -> Option<&T> {
         self.get_by_point(&(x, y))
     }
 
-    pub fn get_key_value(&self, x: u32, y: u32) -> Option<(&(u32, u32), &T)> {
+    pub fn get_key_value(&self, x: i32, y: i32) -> Option<(&(i32, i32), &T)> {
         self.data.get_key_value(&(x, y))
     }
 
-    pub fn get_mut(&mut self, x: u32, y: u32) -> Option<&mut T> {
+    pub fn get_mut(&mut self, x: i32, y: i32) -> Option<&mut T> {
         self.get_by_point_mut(&(x, y))
     }
 
-    pub fn get_by_point(&self, point: &(u32, u32)) -> Option<&T> {
+    pub fn get_by_point(&self, point: &(i32, i32)) -> Option<&T> {
         self.data.get(point)
     }
 
-    pub fn get_by_point_mut<'a>(&'a mut self, point: &(u32, u32)) -> Option<&'a mut T> {
+    pub fn get_by_point_mut<'a>(&'a mut self, point: &(i32, i32)) -> Option<&'a mut T> {
         self.data.get_mut(point)
     }
 
-    pub fn set(&mut self, x: u32, y: u32, item: T) -> Option<T> {
+    pub fn set(&mut self, x: i32, y: i32, item: T) -> Option<T> {
         self.insert((x, y), item)
     }
 
-    pub fn insert(&mut self, point: (u32, u32), item: T) -> Option<T> {
+    pub fn insert(&mut self, point: (i32, i32), item: T) -> Option<T> {
         self.data.insert(point, item)
     }
 
     pub fn iter_direction(
         &self,
         direction: Direction,
-        start_x: u32,
-        start_y: u32,
-    ) -> iter::DirectionIterator<T> {
-        iter::DirectionIterator::new(self, direction, start_x, start_y)
+        start_x: i32,
+        start_y: i32,
+    ) -> direction_iterator::DirectionIterator<T> {
+        direction_iterator::DirectionIterator::new(self, direction, start_x, start_y)
     }
 
     pub fn iter_direction_mut(
         &mut self,
         direction: Direction,
-        start_x: u32,
-        start_y: u32,
-    ) -> iter::DirectionIteratorMut<T> {
-        iter::DirectionIteratorMut::new(self, direction, start_x, start_y)
+        start_x: i32,
+        start_y: i32,
+    ) -> direction_iterator::DirectionIteratorMut<T> {
+        direction_iterator::DirectionIteratorMut::new(self, direction, start_x, start_y)
     }
 
     /// Returns an iterator over the grid in a given direction.
@@ -208,10 +213,10 @@ impl<T> HexGrid<T> {
     pub fn values_direction(
         &self,
         direction: Direction,
-        start_x: u32,
-        start_y: u32,
-    ) -> iter::Values<T> {
-        iter::Values {
+        start_x: i32,
+        start_y: i32,
+    ) -> direction_iterator::Values<T> {
+        direction_iterator::Values {
             iter: self.iter_direction(direction, start_x, start_y),
         }
     }
@@ -219,10 +224,10 @@ impl<T> HexGrid<T> {
     pub fn values_direction_mut(
         &mut self,
         direction: Direction,
-        start_x: u32,
-        start_y: u32,
-    ) -> iter::ValuesMut<T> {
-        iter::ValuesMut {
+        start_x: i32,
+        start_y: i32,
+    ) -> direction_iterator::ValuesMut<T> {
+        direction_iterator::ValuesMut {
             iter: self.iter_direction_mut(direction, start_x, start_y),
         }
     }
@@ -230,23 +235,44 @@ impl<T> HexGrid<T> {
     pub fn keys_direction(
         &self,
         direction: Direction,
-        start_x: u32,
-        start_y: u32,
-    ) -> iter::Keys<T> {
-        iter::Keys {
+        start_x: i32,
+        start_y: i32,
+    ) -> direction_iterator::Keys<T> {
+        direction_iterator::Keys {
             iter: self.iter_direction(direction, start_x, start_y),
         }
     }
 
-    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<(u32, u32), T> {
+    pub fn iter_around(&self, distance: i32, mid_point: (i32, i32)) -> AroundIterator<T> {
+        AroundIterator::new(&self, distance, mid_point)
+    }
+
+    pub fn keys_around(&self, distance: i32, mid_point: (i32, i32)) -> around_iterator::Keys<T> {
+        around_iterator::Keys {
+            iter: self.iter_around(distance, mid_point),
+        }
+    }
+
+    pub fn values_around(
+        &self,
+        distance: i32,
+        mid_point: (i32, i32),
+    ) -> around_iterator::Values<T> {
+        around_iterator::Values {
+            iter: self.iter_around(distance, mid_point),
+        }
+    }
+
+    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<(i32, i32), T> {
         self.data.into_keys()
     }
 
-    pub fn into_values(self) -> std::collections::btree_map::IntoValues<(u32, u32), T> {
+    pub fn into_values(self) -> std::collections::btree_map::IntoValues<(i32, i32), T> {
         self.data.into_values()
     }
 }
 
+#[derive(Debug)]
 pub enum Direction {
     Right,
     Left,
@@ -257,7 +283,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    fn apply_next(&self, current_x: u32, current_y: u32) -> Option<(u32, u32)> {
+    fn apply_next(&self, current_x: i32, current_y: i32) -> Option<(i32, i32)> {
         match self {
             Direction::Right => current_x.checked_add(1).map(|x| (x, current_y)),
             Direction::Left => current_x.checked_sub(1).map(|x| (x, current_y)),
@@ -273,12 +299,27 @@ impl Direction {
             },
         }
     }
+
+    fn rotate_clockwise(&self) -> Self {
+        match self {
+            Direction::Right => Direction::DownRight,
+            Direction::DownRight => Direction::DownLeft,
+            Direction::DownLeft => Direction::Left,
+            Direction::Left => Direction::UpLeft,
+            Direction::UpLeft => Direction::UpRight,
+            Direction::UpRight => Direction::Right,
+        }
+    }
 }
 
-impl<T> From<BTreeMap<(u32, u32), T>> for HexGrid<T> {
-    fn from(data: BTreeMap<(u32, u32), T>) -> Self {
+impl<T> From<BTreeMap<(i32, i32), T>> for HexGrid<T> {
+    fn from(data: BTreeMap<(i32, i32), T>) -> Self {
         HexGrid { data }
     }
+}
+
+pub fn to_3d_coordinate(x: i32, y: i32) -> (i32, i32, i32) {
+    (x, y, -x - y)
 }
 
 #[cfg(test)]
@@ -329,5 +370,10 @@ mod tests {
         };
 
         assert_eq!(expected, grid)
+    }
+
+    #[test]
+    fn to_3d_coordinate_test() {
+        assert_eq!(to_3d_coordinate(2, 1), (2, 1, -3));
     }
 }

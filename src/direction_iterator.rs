@@ -17,7 +17,7 @@ pub struct Keys<'a, T> {
 }
 
 impl<'a, T> Iterator for Keys<'a, T> {
-    type Item = &'a (u32, u32);
+    type Item = &'a (i32, i32);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(k, _)| k)
@@ -39,13 +39,13 @@ impl<'a, T> Iterator for ValuesMut<'a, T> {
 pub struct DirectionIterator<'a, T> {
     grid: &'a HexGrid<T>,
     direction: Direction,
-    current_x: u32,
-    current_y: u32,
+    current_x: i32,
+    current_y: i32,
     done: bool,
 }
 
 impl<'a, T> DirectionIterator<'a, T> {
-    pub fn new(grid: &'a HexGrid<T>, direction: Direction, current_x: u32, current_y: u32) -> Self {
+    pub fn new(grid: &'a HexGrid<T>, direction: Direction, current_x: i32, current_y: i32) -> Self {
         DirectionIterator {
             grid,
             direction,
@@ -57,7 +57,7 @@ impl<'a, T> DirectionIterator<'a, T> {
 }
 
 impl<'a, T> Iterator for DirectionIterator<'a, T> {
-    type Item = (&'a (u32, u32), &'a T);
+    type Item = (&'a (i32, i32), &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -81,8 +81,8 @@ impl<'a, T> Iterator for DirectionIterator<'a, T> {
 pub struct DirectionIteratorMut<'a, T> {
     grid: &'a mut HexGrid<T>,
     direction: Direction,
-    current_x: u32,
-    current_y: u32,
+    current_x: i32,
+    current_y: i32,
     done: bool,
 }
 
@@ -90,8 +90,8 @@ impl<'a, T> DirectionIteratorMut<'a, T> {
     pub fn new(
         grid: &'a mut HexGrid<T>,
         direction: Direction,
-        current_x: u32,
-        current_y: u32,
+        current_x: i32,
+        current_y: i32,
     ) -> Self {
         DirectionIteratorMut {
             grid,
@@ -104,7 +104,7 @@ impl<'a, T> DirectionIteratorMut<'a, T> {
 }
 
 impl<'a, T> Iterator for DirectionIteratorMut<'a, T> {
-    type Item = ((u32, u32), &'a mut T);
+    type Item = ((i32, i32), &'a mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -133,9 +133,9 @@ impl<'a, T> Iterator for DirectionIteratorMut<'a, T> {
 }
 
 impl<'a, T> IntoIterator for HexGrid<T> {
-    type Item = ((u32, u32), T);
+    type Item = ((i32, i32), T);
 
-    type IntoIter = std::collections::btree_map::IntoIter<(u32, u32), T>;
+    type IntoIter = std::collections::btree_map::IntoIter<(i32, i32), T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.data.into_iter()
