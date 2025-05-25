@@ -1,5 +1,5 @@
-use crate::to_3d_coordinate;
 use crate::{Direction, HexGrid};
+use crate::{abs_max_3d_point, to_3d_coordinate};
 
 pub struct Values<'a, T> {
     pub(crate) iter: AroundIterator<'a, T>,
@@ -103,7 +103,7 @@ impl<'a, T> AroundIterator<'a, T> {
 
         if let Some(might_be_next) = self.previous_direction.apply_next(coord.0, coord.1) {
             let oke = to_3d_coordinate(might_be_next.0, might_be_next.1);
-            if max(oke) > self.distance {
+            if abs_max_3d_point(oke) > self.distance {
                 self.previous_direction = self.previous_direction.rotate_clockwise();
                 return self.determine_next();
             }
@@ -122,10 +122,6 @@ impl<'a, T> AroundIterator<'a, T> {
 
 fn determine_start(distance: i32, mid_point_x: i32, mid_point_y: i32) -> (i32, i32) {
     (mid_point_x + distance, mid_point_y)
-}
-
-fn max(tuple: (i32, i32, i32)) -> i32 {
-    tuple.0.abs().max(tuple.1.abs()).max(tuple.2.abs())
 }
 
 #[test]

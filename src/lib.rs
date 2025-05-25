@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::around_iterator::AroundIterator;
 
 pub mod around_iterator;
+pub mod astar;
 pub mod direction_iterator;
 
 // reads: https://www.redblobgames.com/grids/hexagons/
@@ -154,6 +155,24 @@ impl<T> HexGrid<T> {
 
     pub fn insert(&mut self, point: (i32, i32), item: T) -> Option<T> {
         self.data.insert(point, item)
+    }
+
+    /// calculate the distance between two points, this doesn't check if it is possible in the grid.
+    pub fn distance(point_a: &(i32, i32), point_b: &(i32, i32)) -> i32 {
+        let a = to_3d_coordinate(point_a.0, point_a.1);
+        let b = to_3d_coordinate(point_b.0, point_b.1);
+
+        // abs_max_3d_point((a.0 - b.0, a.1 - b.1, a.2 - b.2))
+        Self::distance_3d(&a, &b)
+    }
+
+    pub fn distance_3d(a: &(i32, i32, i32), b: &(i32, i32, i32)) -> i32 {
+        abs_max_3d_point((a.0 - b.0, a.1 - b.1, a.2 - b.2))
+    }
+
+    /// calculates the path between two points using astar
+    pub fn astar(&self, point_a: (i32, i32), point_b: (i32, i32)) -> Option<Vec<(i32, i32)>> {
+        astar::astar(&self, point_a, point_b)
     }
 
     pub fn iter_direction(
@@ -322,6 +341,10 @@ pub fn to_3d_coordinate(x: i32, y: i32) -> (i32, i32, i32) {
     (x, y, -x - y)
 }
 
+pub(crate) fn abs_max_3d_point(tuple: (i32, i32, i32)) -> i32 {
+    tuple.0.abs().max(tuple.1.abs()).max(tuple.2.abs())
+}
+
 #[cfg(test)]
 mod tests {
     use collection_literals::btree;
@@ -375,5 +398,27 @@ mod tests {
     #[test]
     fn to_3d_coordinate_test() {
         assert_eq!(to_3d_coordinate(2, 1), (2, 1, -3));
+    }
+
+    #[test]
+    fn astar_knightsofu_test() {
+        // based on https://theknightsofu.com/pathfinding-on-a-hexagonal-grid-a-algorithm-2/
+        let mut btree = BTreeMap::new();
+        for (x, y) in (-3..6).flat_map(|i| (0..6).map(move |j| (i, j))) {
+            // these are the walls
+            if [(0, 2), (1, 4), (2, 3), (2, 2)].contains(&(x, y)) {
+                continue;
+            }
+            btree.insert((x, y), 1);
+        }
+
+        let grid = HexGrid::from(btree);
+
+        let path = grid.astar((0, 3), (4, 2));
+
+        assert_eq!(
+            Some(vec![(0, 3), (1, 2), (2, 1), (3, 1), (3, 2), (4, 2)]),
+            path
+        );
     }
 }
